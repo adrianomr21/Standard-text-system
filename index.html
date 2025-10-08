@@ -1,0 +1,379 @@
+<html lang="pt-BR" class="">
+<head>
+  <meta charset="UTF-8" />
+  <title>Padronizador de Nomes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Ativa suporte ao dark mode pelo class strategy
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <style type="text/tailwindcss"> 
+    .toast {
+      animation: fadeInOut 2s ease forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+  </style>
+  
+</head>
+<body class="bg-gray-100 dark:bg-gray-950 dark:text-gray-100 p-6 transition-colors">
+
+  <div class="max-w-3xl mx-auto bg-white dark:bg-slate-950 p-6 rounded-2xl shadow transition-colors">
+    <!-- Cabeçalho com tema -->
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold">🔠 Padronizador de Nomes</h1>
+      <div class="flex items-center gap-2">
+        <button id="toggleSettings" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700">⚙️</button>
+        <button id="toggleTheme" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 dark:text-yellow-300">
+          🌙
+        </button>
+      </div>
+    </div>
+
+    
+
+    <!-- Entrada do nome original -->
+    <div class="mb-4">
+      <label class="block mb-2 font-medium">Nome original:</label>
+      <textarea id="nomeOriginal" class="border rounded p-2 w-full dark:bg-gray-700 dark:border-gray-600" rows="2" placeholder="Cole ou escreva o nome da disciplina..." ></textarea>
+    </div>
+
+    <!-- Pré-visualizações -->
+    <div id="formatacoes" class="mb-4 space-y-2">
+      
+      <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded">
+        <div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Formato frase</div>
+          <div id="formatoFrase" class="font-mono text-sm"></div>
+        </div>
+        <button onclick="copiarTexto('formatoFrase')" title="Copiar" class="text-blue-600 dark:text-blue-400">📋</button>
+      </div>
+
+      <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded">
+        <div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Caixa baixa</div>
+          <div id="caixaBaixa" class="font-mono text-sm"></div>
+        </div>
+        <button onclick="copiarTexto('caixaBaixa')" title="Copiar" class="text-blue-600 dark:text-blue-400">📋</button>
+      </div>
+
+      <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded">
+        <div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">CAIXA ALTA</div>
+          <div id="caixaAlta" class="font-mono text-sm"></div>
+        </div>
+        <button onclick="copiarTexto('caixaAlta')" title="Copiar" class="text-blue-600 dark:text-blue-400">📋</button>
+      </div>
+
+      
+
+      <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded">
+        <div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Title Case</div>
+          <div id="titleCase" class="font-mono text-sm"></div>
+        </div>
+        <button onclick="copiarTexto('titleCase')" title="Copiar" class="text-blue-600 dark:text-blue-400">📋</button>
+      </div>
+    </div>
+
+    <!-- Seleção de modelo -->
+    <div class="mb-4">
+      <label class="block mb-2 font-medium">Modelo:</label>
+      <div class="flex gap-2 mt-2 ">
+        <select id="modeloSelect" class="border rounded p-2 w-full dark:bg-gray-700 dark:border-gray-600"></select>
+        <button onclick="adicionarModelo()" class="dark:bg-gray-700 dark:text-white px-2 py-1 rounded"><b>+</b></button>
+        <button onclick="editarModelo()" class="dark:bg-gray-700 dark:text-white px-2 py-1 rounded">✎</button>
+        <button onclick="removerModelo()" class="dark:bg-gray-700 dark:text-white px-2 py-1 rounded">🗑</button>
+      </div>
+    </div>
+
+    <!-- Opção de atualização automática -->
+    <div class="mb-3 flex items-center gap-3">
+      <input id="autoUpdateChk" type="checkbox" checked />
+      <label for="autoUpdateChk" class="text-sm">Atualizar automaticamente o resultado (se desmarcar, suas edições manuais não serão sobrescritas)</label>
+    </div>
+
+    <!-- Resultado final padronizado (LMS) -->
+    <div class="mb-4">
+      <label class="block mb-2 font-medium">Nome padronizado (LMS) — editável:</label>
+      <input id="resultadoFinal" class="border rounded p-2 w-full font-mono dark:bg-gray-700 dark:border-gray-600" />
+      <div class="flex gap-2 mt-2">
+        <button onclick="copiarTexto('resultadoFinal')" class="bg-blue-600 text-white px-3 py-1 rounded">📋 Copiar</button>
+        <button onclick="regenerarResultado()" class="bg-gray-200 dark:bg-gray-600 dark:text-gray-200 px-3 py-1 rounded">Regenerar a partir do original</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Configurações -->
+  <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+      <h2 class="text-xl font-bold mb-4">Configurações de Stopwords</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Adicione ou remova palavras a serem ignoradas na padronização (uma por linha).</p>
+      <textarea id="stopwordsInput" class="border rounded p-2 w-full h-48 dark:bg-gray-700 dark:border-gray-600"></textarea>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="cancelSettings" class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded">Cancelar</button>
+        <button id="saveSettings" class="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container de notificações -->
+  <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+  
+  
+  <script>
+    // -------------------- THEME --------------------
+    const html = document.documentElement;
+    const themeBtn = document.getElementById("toggleTheme");
+
+    function applyTheme(dark) {
+      if (dark) {
+        html.classList.add("dark");
+        themeBtn.textContent = "🌞";
+        localStorage.setItem("theme", "dark");
+      } else {
+        html.classList.remove("dark");
+        themeBtn.textContent = "🌙";
+        localStorage.setItem("theme", "light");
+      }
+    }
+
+    themeBtn.addEventListener("click", () => {
+      applyTheme(!html.classList.contains("dark"));
+    });
+
+    // Carregar tema salvo
+    if (localStorage.getItem("theme") === "dark") {
+      applyTheme(true);
+    } else {
+      applyTheme(false);
+    }
+
+    
+
+    // -------------------- TOAST --------------------
+    function showToast(msg, color="green") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast bg-${color}-600 text-white px-4 py-2 rounded shadow-lg`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    // AUTO-UPDATE CONTROL
+    const autoUpdateChk = document.getElementById('autoUpdateChk');
+    let autoUpdate = autoUpdateChk.checked;
+    autoUpdateChk.addEventListener('change', () => {
+      autoUpdate = autoUpdateChk.checked;
+      if (autoUpdate) {
+        atualizarFormatacoes();
+      }
+    });
+
+    // Lista de modelos no localStorage
+    let modelos = JSON.parse(localStorage.getItem("modelos")) || [
+      "modelo_fd_",
+      "modelo_fd_pi_",
+      "modelo_fd_workshop_",
+      "modelo_pg_",
+      "modelo_pg_ai_",
+      "modelo_horas_ead_",
+      "modelo_horas_ead_comp_",
+      "modelo_ext_",
+      "modelo_prj_",
+      "modelo_rh_",
+      "acesso_naia_trimestre_",
+      "acesso_mec_"
+    ];
+    let select = document.getElementById("modeloSelect");
+
+    if (localStorage.getItem("select")) {
+      let savedSelect = JSON.parse(localStorage.getItem("select"));
+      //console.log("asasa",savedSelect);
+      if (savedSelect) {
+        // Aguardar o carregamento do select
+        window.addEventListener('load', () => {
+          select.value = savedSelect;
+        });
+      }
+    }
+    
+
+    function atualizarSelect() {
+      select.innerHTML = "";
+      modelos.forEach((m) => {
+        let opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        select.appendChild(opt);
+      });
+      localStorage.setItem("modelos", JSON.stringify(modelos));
+    }
+
+    function adicionarModelo() {
+      let novo = prompt("Digite o novo modelo (ex.: modelo_novo_):");
+      if (novo) {
+        modelos.push(novo.trim());
+        atualizarSelect();
+        select.value = novo.trim();
+        atualizarFormatacoes();
+        showToast("Modelo adicionado!");
+      }
+    }
+
+    function editarModelo() {
+      let idx = select.selectedIndex;
+      if (idx >= 0) {
+        let atual = modelos[idx];
+        let novo = prompt("Editar modelo:", atual);
+        if (novo) {
+          modelos[idx] = novo.trim();
+          atualizarSelect();
+          select.value = novo.trim();
+          atualizarFormatacoes();
+          showToast("Modelo editado!");
+        }
+      }
+    }
+
+    function removerModelo() {
+      let idx = select.selectedIndex;
+      if (idx >= 0) {
+        if (!confirm("Remover o modelo selecionado?")) return;
+        modelos.splice(idx, 1);
+        atualizarSelect();
+        atualizarFormatacoes();
+        showToast("Modelo removido!");
+      }
+    }
+
+    // -------------------- SETTINGS MODAL --------------------
+    const settingsBtn = document.getElementById("toggleSettings");
+    const settingsModal = document.getElementById("settingsModal");
+    const stopwordsInput = document.getElementById("stopwordsInput");
+    const saveSettingsBtn = document.getElementById("saveSettings");
+    const cancelSettingsBtn = document.getElementById("cancelSettings");
+
+    let stopwords = JSON.parse(localStorage.getItem("stopwords")) || [
+      "a","e","o","as","os","de","da","do","das","dos",
+      "para","por","em","no","na","nos","nas",
+      "ao","aos","à","às","pelo","pela","pelos","pelas",
+      "num","numa","nuns","numas","com","sobre","entre",
+      "sem","sob","até","após","ante","contra","desde","perante","trás"
+    ];
+
+    settingsBtn.addEventListener("click", () => {
+      stopwordsInput.value = stopwords.join("\n");
+      settingsModal.classList.remove("hidden");
+    });
+
+    cancelSettingsBtn.addEventListener("click", () => {
+      settingsModal.classList.add("hidden");
+    });
+
+    saveSettingsBtn.addEventListener("click", () => {
+      const newStopwords = stopwordsInput.value.split("\n").map(s => s.trim()).filter(Boolean);
+      localStorage.setItem("stopwords", JSON.stringify(newStopwords));
+      stopwords = newStopwords;
+      settingsModal.classList.add("hidden");
+      atualizarFormatacoes();
+      showToast("Stopwords salvas!");
+    });
+
+
+    // Normalizador (remove acentos)
+    function normalizarTexto(txt) {
+      if (!txt) return "";
+      return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Remove artigos e preposições
+    function limparTexto(txt) {
+      if (!txt) return "";
+      let palavras = txt.split(/\s+/).filter(Boolean);
+      palavras = palavras.filter(p => !stopwords.includes(p.toLowerCase()));
+      return palavras.join(" ");
+    }
+
+    function atualizarFormatacoes() {
+      let entrada = document.getElementById("nomeOriginal").value || "";
+      let eTrim = entrada.trim();
+
+      // Salva seleção do modelo (AQUI)
+      //console.log(JSON.stringify(select.value));
+      localStorage.setItem("select", JSON.stringify(select.value));
+
+      if (!eTrim) {
+        document.getElementById("caixaBaixa").textContent = "";
+        document.getElementById("caixaAlta").textContent = "";
+        document.getElementById("formatoFrase").textContent = "";
+        document.getElementById("titleCase").textContent = "";
+        if (autoUpdate) document.getElementById("resultadoFinal").value = "";
+        return;
+      }
+
+      // Previews
+      document.getElementById("caixaBaixa").textContent = entrada.toLowerCase();
+      document.getElementById("caixaAlta").textContent = entrada.toUpperCase();
+      document.getElementById("formatoFrase").textContent =
+        entrada.charAt(0).toUpperCase() + entrada.slice(1).toLowerCase();
+      document.getElementById("titleCase").textContent =
+        entrada.split(/\s+/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
+
+      // Resultado LMS
+      let normalized = normalizarTexto(entrada);
+      let safe = normalized.replace(/[^a-zA-Z0-9\s]/g, " ");
+      safe = safe.toLowerCase();
+      let semStop = limparTexto(safe);
+      let snake = semStop.replace(/\s+/g, "_").replace(/^_+|_+$/g, "");
+      let resultado = select.value + snake;
+
+      if (autoUpdate) {
+        document.getElementById("resultadoFinal").value = resultado;
+      }
+
+    }
+
+    function regenerarResultado() {
+      let entrada = document.getElementById("nomeOriginal").value || "";
+      if (!entrada.trim()) return;
+      let normalized = normalizarTexto(entrada);
+      let safe = normalized.replace(/[^a-zA-Z0-9\s]/g, " ");
+      safe = safe.toLowerCase();
+      let semStop = limparTexto(safe);
+      let snake = semStop.replace(/\s+/g, "_").replace(/^_+|_+$/g, "");
+      document.getElementById("resultadoFinal").value = select.value + snake;
+      showToast("Resultado regenerado!");
+    }
+
+    function copiarTexto(id) {
+      let el = document.getElementById(id);
+      let texto = el.value !== undefined ? el.value : el.textContent;
+      if (!texto) {
+        showToast("Nada para copiar.");
+        return;
+      }
+      navigator.clipboard.writeText(texto).then(() => {
+        showToast("Copiado!");
+      }).catch(() => {
+        showToast("Erro ao copiar.");
+      });
+    }
+
+    // Eventos
+    document.getElementById("nomeOriginal").addEventListener("input", atualizarFormatacoes);
+    select.addEventListener("change", atualizarFormatacoes);
+
+    // Inicializa
+    atualizarSelect();
+    atualizarFormatacoes();
+  </script>
+</body>
+</html>
